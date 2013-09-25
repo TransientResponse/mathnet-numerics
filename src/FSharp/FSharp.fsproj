@@ -72,6 +72,8 @@
     <Compile Include="Fit.fs" />
     <Compile Include="FindRoots.fs" />
     <Compile Include="RandomVariable.fs" />
+    <Compile Include="ComplexLib.fsi" />
+    <Compile Include="ComplexLib.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.Core" />
