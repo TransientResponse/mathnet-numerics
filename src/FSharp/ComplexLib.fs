@@ -1,5 +1,5 @@
 module ComplexLib
-open Microsoft.FSharp.Math
+//open Microsoft.FSharp.Math
 
 type Complex(real: float, imag: float) = 
     struct
@@ -11,6 +11,10 @@ type Complex(real: float, imag: float) =
         override this.ToString() = sprintf "%.4f%+.4fj" real imag
     
         static member FromPolar(mag:float, phase:float) = Complex(mag * cos phase, mag * sin phase)
+
+        static member One = Complex(1.0, 0.0)
+        static member Zero = Complex(0.0, 0.0)
+        static member I = Complex(0.0, 1.0)
     
         static member (+) (a:Complex, b:Complex) = Complex(a.Real + b.Real, a.Imag + b.Imag)
         static member (+) (a:Complex, b:float) = Complex(a.Real + b, a.Imag)
@@ -37,10 +41,15 @@ type Complex(real: float, imag: float) =
         static member ( ** ) (a:float, b:Complex) = 
             let temp = b * log a
             exp temp.Real * Complex(cos temp.Imag, sin temp.Imag)
+        static member (~-) (a:Complex) = Complex(-a.Real, -a.Imag)
     end
+
+///Quicker shortcut for mulIply by I.
+let mulI (arg:Complex) = Complex(-arg.Imag, arg.Real)
+let divI (arg:Complex) = Complex(arg.Imag, -arg.Real)
     
-let csin (arg:Complex) = Complex(sin arg.Real * cosh arg.Imag, cos arg.Real * sinh arg.Imag)
-let ccos (arg:Complex) = Complex(cos arg.Real * cosh arg.Imag, -sin arg.Real * sinh arg.Imag)
+let csin (arg:Complex): Complex = Complex(sin arg.Real * cosh arg.Imag, cos arg.Real * sinh arg.Imag)
+let ccos (arg:Complex) = Complex(cos arg.Real * cosh arg.Imag, -(sin arg.Real) * (sinh arg.Imag))
 let ctan (arg:Complex) = csin arg / ccos arg
 let csinh (arg:Complex) = Complex(sinh arg.Real * cos arg.Imag, cosh arg.Real * sin arg.Imag)
 let ccosh (arg:Complex) = Complex(cosh arg.Real * cos arg.Imag, sinh arg.Real * sin arg.Imag)
@@ -56,3 +65,13 @@ let clog (arg:Complex) = Complex.FromPolar(log arg.Mag, arg.Phase)
 let clog10 (arg:Complex) = Complex.FromPolar(log10 arg.Mag, arg.Phase)
 
 let csqrt (arg:Complex) = Complex.FromPolar(sqrt arg.Mag, arg.Phase/2.0)
+let square (arg:Complex) = Complex(arg.Real**2.0 - arg.Imag**2.0, 2.0*arg.Real*arg.Imag)
+
+let catan (arg:Complex) = clog((mulI arg + Complex.One)/(Complex.One - mulI arg))/Complex(0.0, 2.0)
+let cacot (arg:Complex) = clog((arg + Complex.I)/(arg - Complex.I))/Complex(0.0,2.0)
+let casin (arg:Complex) = 
+    let temp = Complex.One - square arg
+    clog(arg*Complex.I + csqrt temp)/Complex.I
+let cacos (arg:Complex) = 
+    let temp = Complex.One - square arg
+    divI(clog(arg + mulI (csqrt temp)))
