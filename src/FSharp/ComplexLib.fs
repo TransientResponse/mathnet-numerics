@@ -1,14 +1,21 @@
-module ComplexLib
+﻿module ComplexLib
 //open Microsoft.FSharp.Math
 
-type Complex(real: float, imag: float) = 
+type Complex(real:float, imag:float) = 
     struct
-        member this.Real with get() = real// and set(value) = _real <- value
-        member this.Imag with get() = imag// and set(value) = _imag <- value
+        [<DefaultValue>] static val mutable private _symbol: char
+        [<DefaultValue>] val mutable private _real: float
+        [<DefaultValue>] val mutable private _imag: float
+        new(real) = Complex(real, 0.0)
+        static do Complex._symbol <- 'i'
+        
+        member this.Real with get() = this._real// and set(value) = _real <- value
+        member this.Imag with get() = this._imag// and set(value) = _imag <- value
         member this.Mag = sqrt(this.Real**2.0 + this.Imag**2.0)
         member this.Phase = atan2 this.Imag this.Real
         member this.Conjugate with get() = Complex(this.Real, -this.Imag)
-        override this.ToString() = sprintf "%.4f%+.4fj" real imag
+        static member ImaginarySymbol with get() = Complex._symbol and set(value) = Complex._symbol <- value
+        override this.ToString() = sprintf "%.4f%+.4f%c" real imag Complex._symbol
     
         static member FromPolar(mag:float, phase:float) = Complex(mag * cos phase, mag * sin phase)
 
@@ -22,7 +29,7 @@ type Complex(real: float, imag: float) =
     
         static member (-) (a:Complex, b:Complex) = Complex(a.Real - b.Real, a.Imag - b.Imag)
         static member (-) (a:Complex, b:float) = Complex(a.Real - b, a.Imag)
-        static member (-) (a:float, b:Complex) = Complex(b.Real - a, b.Imag)
+        static member (-) (a:float, b:Complex) = -b + a
     
         static member ( * ) (a:Complex, b:Complex) = Complex.FromPolar(a.Mag * b.Mag, a.Phase + b.Phase) //*)
         static member ( * ) (a:Complex, b:float) = Complex(a.Real * b, a.Imag * b)//*)
@@ -33,18 +40,24 @@ type Complex(real: float, imag: float) =
         //No longer depends on a function
         static member (/) (a:float, b:Complex) = a * Complex(b.Real, -b.Imag)/(b.Real**2.0 + b.Imag**2.0)
         //WHY NO USE SIGNAUTURE FILE???
-        static member ( ** ) (a:Complex, b:Complex) = 
+        static member Pow (a:Complex, b:Complex) = 
             let temp = Complex(log a.Mag, a.Phase) * b
             exp temp.Real * Complex(cos temp.Imag, sin temp.Imag)
-        static member ( ** ) (a:Complex, b:float) = Complex.FromPolar(a.Mag ** b, a.Phase * b)
+        static member Pow (a:Complex, b:float) = Complex.FromPolar(a.Mag ** b, a.Phase * b)
         //Changed to not depend on explicit functions
-        static member ( ** ) (a:float, b:Complex) = 
+        static member Pow (a:float, b:Complex) = 
             let temp = b * log a
             exp temp.Real * Complex(cos temp.Imag, sin temp.Imag)
+        //The compiler doesn't seem to understand.
+//        static member Pow (a:Complex, b:Complex) = a**b
+//        static member Pow (a:Complex, b:float) = a ** b
+//        static member Pow (a:float, b:Complex) = //a**b doesn't work for this one
+//            let temp = b * log a                 //for no apparent reason
+//            exp temp.Real * Complex(cos temp.Imag, sin temp.Imag)
         static member (~-) (a:Complex) = Complex(-a.Real, -a.Imag)
     end
 
-///Quicker shortcut for mulIply by I.
+///Quicker shortcut for multiply by I.
 let mulI (arg:Complex) = Complex(-arg.Imag, arg.Real)
 let divI (arg:Complex) = Complex(arg.Imag, -arg.Real)
     
@@ -61,17 +74,34 @@ let cexp (arg:Complex) = exp arg.Real * Complex(cos arg.Imag, sin arg.Imag)
 let phasor (mag:float) (phase:float) = Complex.FromPolar(mag, phase)
 let magphase (arg:Complex) = (arg.Mag, arg.Phase)
 
-let clog (arg:Complex) = Complex.FromPolar(log arg.Mag, arg.Phase)
-let clog10 (arg:Complex) = Complex.FromPolar(log10 arg.Mag, arg.Phase)
+let clog (arg:Complex) = Complex(log arg.Mag, arg.Phase)
+let clog10 (arg:Complex) = Complex(log10 arg.Mag, arg.Phase)
 
 let csqrt (arg:Complex) = Complex.FromPolar(sqrt arg.Mag, arg.Phase/2.0)
 let square (arg:Complex) = Complex(arg.Real**2.0 - arg.Imag**2.0, 2.0*arg.Real*arg.Imag)
 
-let catan (arg:Complex) = clog((mulI arg + Complex.One)/(Complex.One - mulI arg))/Complex(0.0, 2.0)
+let catan (arg:Complex) = clog((mulI arg + 1.0)/(1.0 - mulI arg))/Complex(0.0, 2.0)
 let cacot (arg:Complex) = clog((arg + Complex.I)/(arg - Complex.I))/Complex(0.0,2.0)
 let casin (arg:Complex) = 
-    let temp = Complex.One - square arg
-    clog(arg*Complex.I + csqrt temp)/Complex.I
+    let temp = 1.0 - square arg
+    divI (clog(mulI arg + csqrt temp))
 let cacos (arg:Complex) = 
-    let temp = Complex.One - square arg
+    let temp = 1.0 - square arg
     divI(clog(arg + mulI (csqrt temp)))
+
+let catanh (arg:Complex) = clog((arg + 1.0)/(1.0 - arg))/2.0
+let cacoth (arg:Complex) = clog((arg + 1.0)/(arg - 1.0))/2.0
+let casinh (arg:Complex) = clog(arg + csqrt(1.0 + square(arg)))
+let cacosh (arg:Complex) = clog(arg - csqrt(square(arg) - 1.0))
+
+//Complex gamma function, using Gergő Nemes' approximation (based on the Stirling approximation)
+let cgamma (z:Complex) = 
+    let premult = csqrt(2.0*System.Math.PI/z)
+    let inner = 1.0/(12.0*z - 1.0/(10.0*z))
+    let inve = 0.3678794411714423215955237701615 //Don't rely on double-precision arithmetic
+    premult * (inve * (z + inner))**z
+
+let clngamma (z:Complex) = //Same approximation as before
+    let inner = 1.0/(12.0*z - 1.0/(10.0*z))
+    let ln2pi = 1.83787706640934548356065947281123527972
+    (ln2pi - clog z)/2.0 + z*(clog inner - 1.0)
