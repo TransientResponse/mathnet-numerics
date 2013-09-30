@@ -2,9 +2,8 @@ module ComplexLib
 type Complex =
   struct
     new : real:float -> Complex
+    new : arg:string -> Complex
     new : real:float * imag:float -> Complex
-    val mutable private _real: float
-    val mutable private _imag: float
     override ToString : unit -> string
     member Conjugate : Complex
     member Imag : float

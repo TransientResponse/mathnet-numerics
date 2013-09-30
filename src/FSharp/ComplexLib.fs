@@ -4,13 +4,17 @@
 type Complex(real:float, imag:float) = 
     struct
         [<DefaultValue>] static val mutable private _symbol: char
-        [<DefaultValue>] val mutable private _real: float
-        [<DefaultValue>] val mutable private _imag: float
         new(real) = Complex(real, 0.0)
+        //Be super-fancy
+        new(arg:string) = 
+            if not (arg.EndsWith("i") || arg.EndsWith("j") || arg.EndsWith("I") || arg.EndsWith("J")) then failwith "Invalid complex number string"
+            let nums = System.Text.RegularExpressions.Regex.Split(arg.Substring(0, arg.Length-1), @"\s*(\+|-)\s*")
+            if nums.Length <> 2 then failwith "Invalid complex number string" //<> is so weird
+            Complex(System.Double.Parse nums.[0], System.Double.Parse nums.[1])
         static do Complex._symbol <- 'i'
         
-        member this.Real with get() = this._real// and set(value) = _real <- value
-        member this.Imag with get() = this._imag// and set(value) = _imag <- value
+        member this.Real with get() = real// and set(value) = _real <- value
+        member this.Imag with get() = imag// and set(value) = _imag <- value
         member this.Mag = sqrt(this.Real**2.0 + this.Imag**2.0)
         member this.Phase = atan2 this.Imag this.Real
         member this.Conjugate with get() = Complex(this.Real, -this.Imag)
@@ -105,3 +109,13 @@ let clngamma (z:Complex) = //Same approximation as before
     let inner = 1.0/(12.0*z - 1.0/(10.0*z))
     let ln2pi = 1.83787706640934548356065947281123527972
     (ln2pi - clog z)/2.0 + z*(clog inner - 1.0)
+
+//Be SUPER FANCY
+module NumericLiteralI = 
+    let inline FromZero() = Complex.Zero
+    let inline FromeOne() = Complex.I
+    let inline FromInt32(n:int) = Complex(0.0, float n)
+    let inline FromInt64(n:int64) = Complex(0.0, float n)
+    let inline FromString(arg:string) = 
+        let num = arg.Substring(0, arg.Length-1)
+        Complex(0.0, float num)
