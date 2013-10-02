@@ -19,7 +19,8 @@ type Complex(real:float, imag:float) =
         member this.Phase = atan2 this.Imag this.Real
         member this.Conjugate with get() = Complex(this.Real, -this.Imag)
         static member ImaginarySymbol with get() = Complex._symbol and set(value) = Complex._symbol <- value
-        override this.ToString() = sprintf "%.4f%+.4f%c" real imag Complex._symbol
+        override this.ToString() = sprintf "%.6f%+.6f%c" real imag Complex._symbol
+        member this.ToPreciseString() = sprintf "%.18f\n%+.18f%c" real imag Complex._symbol
     
         static member FromPolar(mag:float, phase:float) = Complex(mag * cos phase, mag * sin phase)
 
@@ -179,19 +180,15 @@ let square (arg:Complex) = Complex(arg.Real**2.0 - arg.Imag**2.0, 2.0*arg.Real*a
 
 
 
-//Complex gamma function, using the Lanczos approximation
-let rec gamma (z:Complex) = 
-    let g = 7
-    let p = [0.99999999999980993; 676.5203681218851; -1259.1392167224028;
-            771.32342877765313; -176.61502916214059; 12.507343278686905;
-            -0.13857109526572012; 9.9843695780195716e-6; 1.5056327351493116e-7]
-    if z.Real < 0.5 then
-        Math.PI / (sin(Math.PI*z) + gamma(1.0-z))
-    else
-        let z2 = z - 1.0
-        let x = List.mapi (fun i elem -> elem/(z2 + float i)) p |> List.sum
-        let t = z2 + float g + 0.5
-        sqrt(2.0*Math.PI) * t**(z2+0.5) * exp(-t) * x
+//Complex gamma function, using the Lanczos approximation (adapted from Numerical Recipes in C)
+let gamma (z:Complex) = 
+    let p = [1.000000000190015; 76.18009172947146; 
+            -86.50532032941677; 24.01409824083091;
+            -1.231739572450155; 1.208650973866179E-3;
+            -5.395239384953E-6]
+    let rt2Piz = 2.506628274631000502415765284811/z
+    let sum = List.sum [for i in 1..6 -> p.[i]/(z + float i)]
+    (rt2Piz * (p.[0] + sum)) * (z+5.5)**(z+0.5) * exp(-(z+5.5))
 //end gamma
 
 let lngamma (z:Complex) = //Same approximation as before
