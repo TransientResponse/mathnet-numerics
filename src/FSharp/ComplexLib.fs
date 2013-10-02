@@ -9,8 +9,8 @@ type Complex(real:float, imag:float) =
         new(arg:string) = 
             if not (arg.EndsWith("i") || arg.EndsWith("j") || arg.EndsWith("I") || arg.EndsWith("J")) then failwith "Invalid complex number string"
             let nums = System.Text.RegularExpressions.Regex.Split(arg.Substring(0, arg.Length-1), @"\s*(\+|-)\s*")
-            if nums.Length <> 2 then failwith "Invalid complex number string" //<> is so weird
-            Complex(System.Double.Parse nums.[0], System.Double.Parse nums.[1])
+            if nums.Length <> 3 then failwith "Invalid complex number string" //<> is so weird
+            Complex(System.Double.Parse nums.[0], System.Double.Parse nums.[2])
         static do Complex._symbol <- 'i'
         
         member this.Real with get() = real// and set(value) = _real <- value

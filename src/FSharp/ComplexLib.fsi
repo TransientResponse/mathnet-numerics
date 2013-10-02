@@ -114,7 +114,6 @@ type Complex32 =
 val conjugate : arg:Complex -> Complex
 val sqnorm : arg:Complex -> float
 val inverse : arg:Complex -> Complex
-val cexp : arg:Complex -> Complex
 val phasor : mag:float -> phase:float -> Complex
 val magphase : arg:Complex -> float * float
 val square : arg:Complex -> Complex
